@@ -15,3 +15,6 @@ run_test.py     - running auto-testing (`python3 -m unittest -v run_test.py`)
 trading.py      - some interactive CLI for manual interaction with Tokens CC,
                   now possible only create token and list all avaliable in CC tokens
                   soon I'll add possibility to list / place / fill trades
+
+oracle.py       - interactive CLI for oracle CC. Now possible to prepare oracle
+                  for data publishing (create, register, subscribe) in easy way

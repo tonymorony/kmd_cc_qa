@@ -73,3 +73,113 @@ def create_token(ac_name, name, supply, description):
 #def make_trade(ac_name, ticker):
 
 #def place_trade(ac_name, ticker):
+
+def get_oracles_list(ac_name):
+    oracles_ids = json.loads(check_output(
+    ["komodo-cli","-ac_name="+ac_name,"oracleslist"]))
+    oracles_list = {}
+
+    for oracle_id in oracles_ids:
+        oracle_info = json.loads(check_output(
+        ["komodo-cli","-ac_name="+ac_name,"oraclesinfo",oracle_id]))
+        oracles_list[oracle_info["name"]] = oracle_info["txid"]
+    return oracles_list
+
+def oracle_create(ac_name, name, description, type):
+    is_created = False
+    waiting_time = 0
+
+    new_oracle = json.loads(check_output(
+    ["komodo-cli","-ac_name="+ac_name,"oraclescreate",name,description,type]))
+    byte_oracle_id = check_output(
+    ["komodo-cli","-ac_name="+ac_name,"sendrawtransaction",new_oracle["hex"]])
+    oracle_id = byte_oracle_id.decode().rstrip()
+
+    print("Oracle creation transaction sent to blockchain.\n"
+          "Transaction ID: " + oracle_id)
+    while True:
+        oracles_list = get_oracles_list(ac_name)
+        if oracle_id in oracles_list.values():
+            print("Oracle succesfully created!")
+            is_created = True
+            break
+        elif waiting_time > 359:
+            print("Something seems to have gone wrong: 5 minutes timeout passed.")
+            is_created = False
+            break
+        else:
+            print("Oracle is not created yet. I will check it again in 60 seconds.\n"
+                  "You already waiting {} seconds. "
+                  "Max. waiting time is 300 seconds.".format(waiting_time))
+            waiting_time += 60
+            time.sleep(60)
+    return oracle_id
+
+def oracle_register(ac_name, oracle_id, datafee):
+    is_registered = False
+    waiting_time = 0
+    baton_returned = ""
+    publisher_id = ""
+
+    new_registration = json.loads(check_output(
+    ["komodo-cli","-ac_name="+ac_name,"oraclesregister",oracle_id,datafee]))
+    byte_registration_id = check_output(
+    ["komodo-cli","-ac_name="+ac_name,"sendrawtransaction",new_registration["hex"]])
+    batontx_id = byte_registration_id.decode().rstrip()
+    print("Oracle registration transaction sent to blockchain.\n"
+          "Transaction ID: " + batontx_id)
+    while True:
+        oracles_info = json.loads(check_output(
+        ["komodo-cli","-ac_name="+ac_name,"oraclesinfo",oracle_id]))
+        for entry in oracles_info["registered"]:
+            baton_returned = entry["batontxid"]
+        if baton_returned == batontx_id:
+            print("Oracle succesfully registered!")
+            is_registered = True
+            break
+        elif waiting_time > 359:
+            print("Something seems to have gone wrong: 5 minutes timeout passed.")
+            is_created = False
+            break
+        else:
+            print("Oracle is not registered yet. I will check it again in 60 seconds.\n"
+                  "You already waiting {} seconds. "
+                  "Max. waiting time is 300 seconds.".format(waiting_time))
+            waiting_time += 60
+            time.sleep(60)
+    for entry in oracles_info["registered"]:
+        publisher_id = entry["publisher"]
+    return publisher_id
+
+def oracle_subscribe(ac_name, oracle_id, publisher_id, datafee):
+    is_subscribed = False
+    waiting_time = 0
+    lifetime = 0
+
+    new_subscription = json.loads(check_output(
+    ["komodo-cli","-ac_name="+ac_name,"oraclessubscribe",oracle_id,publisher_id,datafee]))
+    byte_subscription_id = check_output(
+    ["komodo-cli","-ac_name="+ac_name,"sendrawtransaction",new_subscription["hex"]])
+    subscription_txid = byte_subscription_id.decode().rstrip()
+    print("Oracle subscription transaction sent to blockchain.\n"
+          "Transaction ID: " + subscription_txid)
+    while True:
+        oracles_info = json.loads(check_output(
+        ["komodo-cli","-ac_name="+ac_name,"oraclesinfo",oracle_id]))
+        for entry in oracles_info["registered"]:
+            lifetime = float(entry["lifetime"])
+        if lifetime > 0 :
+            print("Succesfully subscribed on oracle!")
+            is_registered = True
+            break
+        elif waiting_time > 359:
+            print("Something seems to have gone wrong: 5 minutes timeout passed.")
+            is_created = False
+            break
+        else:
+            print("You not subscribed on Oracle yet. I will check it again in 60 seconds.\n"
+                  "You already waiting {} seconds. "
+                  "Max. waiting time is 300 seconds.".format(waiting_time))
+            waiting_time += 60
+            time.sleep(60)
+    return is_subscribed
