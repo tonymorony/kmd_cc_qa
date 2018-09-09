@@ -4,6 +4,7 @@ from test_modules import get_oracles_list
 from test_modules import oracle_create
 from test_modules import oracle_register
 from test_modules import oracle_subscribe
+from test_modules import file_oraclize
 
 # Choosing AC to work
 ac_name = str(input("Input AC name with which you want to work (exmp: ORCL): "))
@@ -39,14 +40,14 @@ while True:
     else:
         print("Input y or n")
 
-# Choosing oracle to work with with
-
-# Choose data to input (text)
-
-# Converting data to HEX + add string length
-
-# Put data to oracle line by line
-
-# Parsing result to file
-
-# Comparing results
+while True:
+    file_oraclize_choice = input("Do you want to transfer file to oracle? (y/n): ")
+    if file_oraclize_choice == 'y':
+        oracle_id = input("Input ID of Oracle to which you want to put the data: ")
+        filename = input("Input the filename which you want to transfer: ")
+        file_oraclize(ac_name, oracle_id, filename)
+        break
+    elif file_oraclize_choice == 'n':
+        break
+    else:
+        print("Input y or n")

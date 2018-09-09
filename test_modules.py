@@ -4,6 +4,16 @@ import subprocess
 import time
 from subprocess import check_output
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 def get_tokens_list(ac_name):
     """Getting information about tokens availiable on AC
 
@@ -53,7 +63,7 @@ def create_token(ac_name, name, supply, description):
     while True:
         tokens_list = get_tokens_list(ac_name)
         if token_id in tokens_list.values():
-            print("Token succesfully created!")
+            print(bcolors.OKGREEN + "Token succesfully created!" + bcolors.ENDC)
             is_created = True
             break
         elif waiting_time > 359:
@@ -100,7 +110,7 @@ def oracle_create(ac_name, name, description, type):
     while True:
         oracles_list = get_oracles_list(ac_name)
         if oracle_id in oracles_list.values():
-            print("Oracle succesfully created!")
+            print(bcolors.OKGREEN + "Oracle succesfully created!" + bcolors.ENDC)
             is_created = True
             break
         elif waiting_time > 359:
@@ -134,7 +144,7 @@ def oracle_register(ac_name, oracle_id, datafee):
         for entry in oracles_info["registered"]:
             baton_returned = entry["batontxid"]
         if baton_returned == batontx_id:
-            print("Oracle succesfully registered!")
+            print(bcolors.OKGREEN + "Oracle succesfully registered!" + bcolors.ENDC)
             is_registered = True
             break
         elif waiting_time > 359:
@@ -169,7 +179,7 @@ def oracle_subscribe(ac_name, oracle_id, publisher_id, datafee):
         for entry in oracles_info["registered"]:
             lifetime = float(entry["lifetime"])
         if lifetime > 0 :
-            print("Succesfully subscribed on oracle!")
+            print(bcolors.OKGREEN + "Succesfully subscribed on oracle!" + bcolors.ENDC)
             is_registered = True
             break
         elif waiting_time > 359:
@@ -183,3 +193,41 @@ def oracle_subscribe(ac_name, oracle_id, publisher_id, datafee):
             waiting_time += 60
             time.sleep(60)
     return is_subscribed
+
+def file_oraclize(ac_name, oracle_id, filename):
+    baton_returned = ""
+    waiting_time = 0
+    is_oraclized = False
+    lines_oraclized = 0
+    lines_count = len(open(filename).readlines(  ))
+    file = open(filename, "r")
+
+    for line in file:
+        new_oraclesdata = json.loads(check_output(["komodo-cli","-ac_name="+ac_name,"oraclesdata",oracle_id,line]))
+        byte_oraclesdata_id = check_output(["komodo-cli","-ac_name="+ac_name,"sendrawtransaction",new_oraclesdata["hex"]])
+        batontx_id = byte_oraclesdata_id.decode().rstrip()
+        print("Line oraclizing transaction sent to blockchain.\n"
+              "Transaction ID: " + batontx_id)
+        while True:
+            oracles_info = json.loads(check_output(["komodo-cli","-ac_name="+ac_name,"oraclesinfo",oracle_id]))
+            for entry in oracles_info["registered"]:
+                baton_returned = entry["batontxid"]
+            if baton_returned == batontx_id:
+                print(bcolors.OKGREEN + "Line succesfully oraclized!" + bcolors.ENDC)
+                lines_oraclized = lines_oraclized + 1
+                print("Oraclized {} lines from {}".format(lines_oraclized, lines_count))
+                waiting_time = 0
+            # add some progress counter
+                break
+            elif waiting_time > 359:
+                print("Something seems to have gone wrong: 5 minutes timeout passed.")
+                is_created = False
+                break
+            else:
+                print("Line is not oraclized yet. I will check it again in 60 seconds.\n"
+                      "You already waiting {} seconds. "
+                      "Max. waiting time is 300 seconds.".format(waiting_time))
+                waiting_time += 60
+                time.sleep(60)
+    is_oraclized = True
+    return is_oraclized
