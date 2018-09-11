@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import time
+import filecmp
 from subprocess import check_output
 
 class bcolors:
@@ -246,3 +247,14 @@ def oracle_read(ac_name, oracle_id, filename, depth):
         file.write(sample[0] + "\n")
     is_readed = True
     return is_readed
+
+def int_to_hex(input_filename):
+    with open(input_filename, 'r') as file:
+        data = file.readlines()
+    with open(input_filename, 'w') as file:
+        for entry in data:
+            file.writelines(hex(int(entry))[2:] + "\n")
+
+def io_compare(input_filename, output_filename):
+    compare = filecmp.cmp(input_filename, output_filename, shallow=True)
+    return compare

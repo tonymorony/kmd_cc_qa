@@ -1,11 +1,13 @@
-#!/usr/bin/env python3.6
-
+#!/usr/bin/env python3
+import readline
 from test_modules import get_oracles_list
 from test_modules import oracle_create
 from test_modules import oracle_register
 from test_modules import oracle_subscribe
 from test_modules import file_oraclize
 from test_modules import oracle_read
+from test_modules import int_to_hex
+from test_modules import io_compare
 
 # Choosing AC to work
 ac_name = str(input("Input AC name with which you want to work (exmp: ORCL): "))
@@ -62,6 +64,33 @@ while True:
         oracle_read(ac_name, oracle_id, filename, depth)
         break
     elif oracle_read_choice == 'n':
+        break
+    else:
+        print("Input y or n")
+
+while True:
+    converter_choice = input("Do you want to convert hex output file? (y/n): ")
+    if converter_choice == 'y':
+        filename = input("Input filename which you want to convert: ")
+        int_to_hex(filename)
+        break
+    elif converter_choice == 'n':
+        break
+    else:
+        print("Input y or n")
+
+while True:
+    comparison_choice = input("Do you want to compare input and outputs? (y/n): ")
+    if comparison_choice == 'y':
+        input_filename = input("Input original data filename: ")
+        output_filename = input("Input blockchain data filename: ")
+        comparison = io_compare(input_filename, output_filename)
+        if comparison:
+            print("Data match!")
+        else:
+            print("Data not match!!!")
+        break
+    elif comparison_choice == 'n':
         break
     else:
         print("Input y or n")
