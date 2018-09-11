@@ -5,6 +5,7 @@ from test_modules import oracle_create
 from test_modules import oracle_register
 from test_modules import oracle_subscribe
 from test_modules import file_oraclize
+from test_modules import oracle_read
 
 # Choosing AC to work
 ac_name = str(input("Input AC name with which you want to work (exmp: ORCL): "))
@@ -48,6 +49,19 @@ while True:
         file_oraclize(ac_name, oracle_id, filename)
         break
     elif file_oraclize_choice == 'n':
+        break
+    else:
+        print("Input y or n")
+
+while True:
+    oracle_read_choice = input("Do you want to read data from oracle? (y/n): ")
+    if oracle_read_choice == 'y':
+        oracle_id = input("Input ID of Oracle from which you want to read the data: ")
+        filename = input("Input the filename to which you want to write the data: ")
+        depth = input("Set amount of entries needed to get from oracle: ")
+        oracle_read(ac_name, oracle_id, filename, depth)
+        break
+    elif oracle_read_choice == 'n':
         break
     else:
         print("Input y or n")

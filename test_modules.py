@@ -217,7 +217,6 @@ def file_oraclize(ac_name, oracle_id, filename):
                 lines_oraclized = lines_oraclized + 1
                 print("Oraclized {} lines from {}".format(lines_oraclized, lines_count))
                 waiting_time = 0
-            # add some progress counter
                 break
             elif waiting_time > 359:
                 print("Something seems to have gone wrong: 5 minutes timeout passed.")
@@ -231,3 +230,19 @@ def file_oraclize(ac_name, oracle_id, filename):
                 time.sleep(60)
     is_oraclized = True
     return is_oraclized
+
+def oracle_read(ac_name, oracle_id, filename, depth):
+    is_readed = False
+    baton_returned = ""
+    file = open(filename, "w")
+    oracles_data = []
+
+    oracles_info = json.loads(check_output(["komodo-cli","-ac_name="+ac_name,"oraclesinfo",oracle_id]))
+    for entry in oracles_info["registered"]:
+        baton_returned = entry["batontxid"]
+
+    oracles_jsondata = json.loads(check_output(["komodo-cli","-ac_name="+ac_name,"oraclessamples",oracle_id,baton_returned,depth]))
+    for sample in oracles_jsondata["samples"]:
+        file.write(sample[0] + "\n")
+    is_readed = True
+    return is_readed
