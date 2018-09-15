@@ -74,4 +74,4 @@ for line1, line2 in zip(file, file3):
 file4.close()
 print("Oracles subscribtion txs broadcasted. Subscription TX IDs can be found in subscriptions_list file.")
 
-print(bcolors.OKGREEN + "Preparation done. Ready to publish the data"  + bcolors.ENDC)
+print(bcolors.OKGREEN + "Preparation done. Ready to publish the data after mempool is clear."  + bcolors.ENDC)
