@@ -1,17 +1,7 @@
 #!/usr/bin/env python3
-import time
 import json
 from subprocess import check_output
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+from test_modules import bcolors
 
 ac_name = input("Input AC name with which you want to work (exmp: ORCL): ")
 file1 = open("oracles_list", "r")

@@ -1,24 +1,14 @@
 #!/usr/bin/env python3
 import json
-import time
 from subprocess import check_output
 from test_modules import file_oraclize
+from test_modules import bcolors
 
 ac_name = input("Input AC name with which you want to work (exmp: ORCL): ")
 oracles_number = int(input("Input how many oracles do you want to create: "))
 oracles_type = input("Set your oracle type (e.g. d): ")
 utxos_number = int(input("How many UTXOs you want to create for your oracles: "))
 pubkey = input("Input your pubkey (for publisher id): ")
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
 
 def oracle_create(ac_name, name, description, type):
     new_oracle = json.loads(check_output(
