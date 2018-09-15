@@ -25,8 +25,11 @@ Oracle mass testing tools:
  a) oracles_list (list of oracles txids) 
  b) register_list (list of registration txids)
  c) subscriptions_list (list of subscription txids)
+Have to wait for mempool cleaning to run next.
+
 
 2) oracle_mass_datapublish.py - using oracles_list and data_sample as inputs. Put data string by sting from data_sample to each oracle from oracles_list. As output creating data_batonids with latest batontxid for each oracle
+Have to wait for mempool cleaning to run next.
 
 3) oracle_mass_dataread.py - using oracles_list, data_batonids and data_sample (just to get depth). Reading data from each oracle baton by baton and put it to files like data_%oracletxid%)
 
