@@ -10,6 +10,9 @@ for line1 in file1:
     file3 = open("data_batonids", "a")
     for line2 in file2:
         new_oraclesdata = json.loads(check_output(["komodo-cli","-ac_name="+ac_name,"oraclesdata",line1.rstrip(),line2.rstrip()]))
+        raw_decode = json.loads(check_output(["komodo-cli","-ac_name="+ac_name,"decoderawtransaction",new_oraclesdata["hex"]]))
+        for sample in raw_decode['vin']:
+            check_output(["komodo-cli","-ac_name="+ac_name,"lockunspent","false","[{\"txid\":\""+sample['txid']+"\",\"vout\":0}]"])
         byte_oraclesdata_id = check_output(["komodo-cli","-ac_name="+ac_name,"sendrawtransaction",new_oraclesdata["hex"]])
         batontx_id = byte_oraclesdata_id.decode().rstrip()
     else:

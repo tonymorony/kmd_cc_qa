@@ -15,6 +15,13 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+def tx_broadcaster(ac_name, hex):
+    try:
+        tx_id =  json.loads(check_output(["komodo-cli","-ac_name="+ac_name,"sendrawtransaction", hex]))
+    except subprocess.CalledProcessError:
+        tx_id = "Error"
+    return tx_id
+
 def get_tokens_list(ac_name):
     """Getting information about tokens availiable on AC
 
@@ -24,8 +31,8 @@ def get_tokens_list(ac_name):
 
      Returns:
        tokens_list (dict): list of availiable tokens
-       in form of dictionary ("name":"tokenid"), e.g. ("TOKEN1",
-       af789fa9a7601cd42ef79b5e12432e6ef51efe8a85ac94af05cc25b27c301098)
+       in form of dictionary ("tokenid":"name"), e.g. (
+       af789fa9a7601cd42ef79b5e12432e6ef51efe8a85ac94af05cc25b27c301098: "TOKEN1")
     """
     tokens_ids = json.loads(check_output(
     ["komodo-cli","-ac_name="+ac_name,"tokenlist"]))
@@ -34,7 +41,7 @@ def get_tokens_list(ac_name):
     for token_id in tokens_ids:
         tokens_info = json.loads(check_output(
         ["komodo-cli","-ac_name="+ac_name,"tokeninfo",token_id]))
-        tokens_list[tokens_info["name"]] = tokens_info["tokenid"]
+        tokens_list[tokens_info["tokenid"]] = tokens_info["name"]
     return tokens_list
 
 def create_token(ac_name, name, supply, description):
@@ -48,8 +55,7 @@ def create_token(ac_name, name, supply, description):
       description (string): token description, e.g. best coin
 
     Returns:
-       is_created (bool): returns is token with pre-set params
-       was found on the blockchain in period, within 5 minutes.
+       tokenid (string): returns id of created token
      """
     is_created = False
     waiting_time = 0
@@ -63,7 +69,7 @@ def create_token(ac_name, name, supply, description):
           "Transaction ID: " + token_id)
     while True:
         tokens_list = get_tokens_list(ac_name)
-        if token_id in tokens_list.values():
+        if token_id in tokens_list.keys():
             print(bcolors.OKGREEN + "Token succesfully created!" + bcolors.ENDC)
             is_created = True
             break
@@ -72,12 +78,22 @@ def create_token(ac_name, name, supply, description):
             is_created = False
             break
         else:
-            print("Token is not created yet. I will check it again in 60 seconds.\n"
+            print("Token is not created yet. I will check it again in 30 seconds.\n"
                   "You already waiting {} seconds. "
                   "Max. waiting time is 300 seconds.".format(waiting_time))
-            waiting_time += 60
-            time.sleep(60)
-    return is_created
+            waiting_time += 30
+            time.sleep(30)
+    return token_id
+
+def tokens_converter(ac_name, evalcode, token_id, pubkey, supply):
+    #catch {'result': 'error', 'error': 'couldnt convert tokens'}
+    try:
+        convertation_id = json.loads(check_output(
+        ["komodo-cli","-ac_name="+ac_name,"tokenconvert",evalcode,token_id,pubkey,supply]))
+    except subprocess.CalledProcessError as e:
+        print('Something is broken\ncommand: %s\noutput: %s\nreturncode:%i' % (e.cmd, e.output, e.returncode))
+
+    return convertation_id
 
 #def show_orders(ac_name):
 
@@ -93,7 +109,7 @@ def get_oracles_list(ac_name):
     for oracle_id in oracles_ids:
         oracle_info = json.loads(check_output(
         ["komodo-cli","-ac_name="+ac_name,"oraclesinfo",oracle_id]))
-        oracles_list[oracle_info["name"]] = oracle_info["txid"]
+        oracles_list[oracle_info["txid"]] = oracle_info["name"]
     return oracles_list
 
 def oracle_create(ac_name, name, description, type):
@@ -110,7 +126,7 @@ def oracle_create(ac_name, name, description, type):
           "Transaction ID: " + oracle_id)
     while True:
         oracles_list = get_oracles_list(ac_name)
-        if oracle_id in oracles_list.values():
+        if oracle_id in oracles_list.keys():
             print(bcolors.OKGREEN + "Oracle succesfully created!" + bcolors.ENDC)
             is_created = True
             break
@@ -119,11 +135,11 @@ def oracle_create(ac_name, name, description, type):
             is_created = False
             break
         else:
-            print("Oracle is not created yet. I will check it again in 60 seconds.\n"
+            print("Oracle is not created yet. I will check it again in 30 seconds.\n"
                   "You already waiting {} seconds. "
                   "Max. waiting time is 300 seconds.".format(waiting_time))
-            waiting_time += 60
-            time.sleep(60)
+            waiting_time += 30
+            time.sleep(30)
     return oracle_id
 
 def oracle_register(ac_name, oracle_id, datafee):
@@ -153,11 +169,11 @@ def oracle_register(ac_name, oracle_id, datafee):
             is_created = False
             break
         else:
-            print("Oracle is not registered yet. I will check it again in 60 seconds.\n"
+            print("Oracle is not registered yet. I will check it again in 30 seconds.\n"
                   "You already waiting {} seconds. "
                   "Max. waiting time is 300 seconds.".format(waiting_time))
-            waiting_time += 60
-            time.sleep(60)
+            waiting_time += 30
+            time.sleep(30)
     for entry in oracles_info["registered"]:
         publisher_id = entry["publisher"]
     return publisher_id
@@ -188,12 +204,16 @@ def oracle_subscribe(ac_name, oracle_id, publisher_id, datafee):
             is_created = False
             break
         else:
-            print("You not subscribed on Oracle yet. I will check it again in 60 seconds.\n"
+            print("You not subscribed on Oracle yet. I will check it again in 30 seconds.\n"
                   "You already waiting {} seconds. "
                   "Max. waiting time is 300 seconds.".format(waiting_time))
-            waiting_time += 60
-            time.sleep(60)
+            waiting_time += 30
+            time.sleep(30)
     return is_subscribed
+
+def oracle_utxogen(ac_name, oracle_id, utxo_num, pubkey, data_fee):
+    for i in range(int(utxo_num)):
+        new_subscription = oracle_subscribe(ac_name, oracle_id, pubkey, data_fee)
 
 def file_oraclize(ac_name, oracle_id, filename):
     baton_returned = ""
@@ -224,11 +244,11 @@ def file_oraclize(ac_name, oracle_id, filename):
                 is_created = False
                 break
             else:
-                print("Line is not oraclized yet. I will check it again in 60 seconds.\n"
+                print("Line is not oraclized yet. I will check it again in 30 seconds.\n"
                       "You already waiting {} seconds. "
                       "Max. waiting time is 300 seconds.".format(waiting_time))
-                waiting_time += 60
-                time.sleep(60)
+                waiting_time += 30
+                time.sleep(30)
     is_oraclized = True
     return is_oraclized
 
@@ -247,6 +267,13 @@ def oracle_read(ac_name, oracle_id, filename, depth):
         file.write(sample[0] + "\n")
     is_readed = True
     return is_readed
+
+def gateways_bind(ac_name,token_id,oracle_id,coinname,tokensupply,pubkey):
+    try:
+        tx_id =  json.loads(check_output(["komodo-cli","-ac_name="+ac_name,"gatewaysbind",token_id,oracle_id,coinname,tokensupply,"1","1",pubkey]))
+    except subprocess.CalledProcessError:
+        tx_id = "Error"
+    return tx_id
 
 def int_to_hex(input_filename):
     with open(input_filename, 'r') as file:
