@@ -1,3 +1,5 @@
+![alt text](https://i.ytimg.com/vi/KEkrWRHCDQU/maxresdefault.jpg)
+
 Python3 required for execution:
 `sudo apt-get install python3.6`
 
@@ -18,6 +20,8 @@ oracle.py       - interactive CLI for oracle CC. Now possible to prepare oracle
                   for data publishing (create, register, subscribe) in easy way.
                   Next step is to add functionallity to transfer various data types
                   from/to files to/from blockchain
+
+![alt text](https://i.imgur.com/cCterV8.png)
 
 Oracle mass testing tools: 
 
