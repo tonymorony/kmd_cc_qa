@@ -5,7 +5,8 @@ import readline
 import subprocess
 from test_modules import get_tokens_list, create_token, oracle_create,\
 oracle_register, oracle_subscribe, get_oracles_list, oracle_utxogen,\
-tokens_converter, tx_broadcaster, gateways_bind
+tokens_converter, tx_broadcaster, gateways_bind, z_sendmany_twoaddresses,\
+list_address_groupings, operationstatus_to_txid
 
 header = "\
  _____       _                               _____  _____ \n\
@@ -163,14 +164,14 @@ def gateway_bind_gw():
         print(bind_hex)
         input("Press [Enter] to continue...")
     else:
-        print(colorize("Bind transaction succesfully broadcasted: " + bind_txid.decode().rstrip(), "green"))
+        print(colorize("Bind transaction succesfully broadcasted: " + bind_txid, "green"))
         file.writelines(bind_txid + "\n")
         file.close()
         print(colorize("Entry added to gateways_list file!\n", "green"))
         input("Press [Enter] to continue...")
 
 def oraclefeed_compile_gw():
-    path_to_komodo = input("Provide me path to your komodo directory. E.g. /home/komodo/ : ")
+    path_to_komodo = input("Provide me path to your komodo directory. E.g. /home/user/komodo/ : ")
     # have to add / if last not /
     subprocess.call(["gcc",path_to_komodo+"src/cc/dapps/oraclefeed.c","-lm","-o",path_to_komodo+"/src/oraclefeed"])
     subprocess.call(["sudo","ln","-sf",path_to_komodo+"/src/oraclefeed","/usr/local/bin/oraclefeed"])
@@ -178,7 +179,15 @@ def oraclefeed_compile_gw():
     input("Press [Enter] to continue...")
 
 def oraclefeed_run_gw():
-    print("You called bar()")
+    path_to_komodo = input("Provide me path to your komodo directory. E.g. /home/user/komodo/ : ")
+    subprocess.call([path_to_komodo+"src/oraclefeed"])
+    ac_name = str(input("Input AC name with which you want to work (exmp: ORCL1): "))
+    oracle_id = input("Input oracle id (oracle have to be Ihh data type): ")
+    #oracleinfo if oracle wrong type -> again input
+    pubkey = input("Input yours pubkey: ")
+    format = "Ihh"
+    bindtxid = input("Input your gateway bind txid: ")
+    subprocess.call([path_to_komodo+"src/oraclefeed",ac_name,oracle_id,pubkey,format,bindtxid])
     input("Press [Enter] to continue...")
 
 #def oraclefeed_status_monitor(): would be great for future create simple node monitoring tool/method
@@ -186,10 +195,21 @@ def oraclefeed_run_gw():
 # checking consisntancy of Ihh oracles height data
 
 def send_kmd_gw():
-    print("You called bar()")
+    print(colorize("Please be carefull when input wallet addresses and amounts since all transactions doing in real KMD!", "pink"))
+    print("Your addresses with balances: ")
+    list_address_groupings()
+    sendaddress = input("Input address from which you transfer KMD: ")
+    recepient1 = input("Input address which belongs to pubkey which will receive tokens: ")
+    amount1 = 0.0001
+    recepient2 = input("Input gateway deposit address: ")
+    #have to show here deposit addresses for gateways created by user
+    amount2 = input("Input how many KMD you want to deposit on this gateway: ")
+    operation = z_sendmany_twoaddresses(sendaddress, recepient1, amount1, recepient2, amount2)
+    print("Operation proceed! " + str(operation))
+    print("KMD Transaction ID: " + str(operationstatus_to_txid(operation)))
+    # maybe have to save it in file
     input("Press [Enter] to continue...")
-# Send z_sendmany transaction - ask wallets and amounts, get txid, wait for confirmation
-# Automatically execute gatewaysdeposit?
+# Automatically execute gatewaysdeposit and gateways claim after 1 confirmation?
 
 def tokens_witdrawal_gw():
     print("You called bar()")

@@ -17,7 +17,7 @@ class bcolors:
 
 def tx_broadcaster(ac_name, hex):
     try:
-        tx_id =  json.loads(check_output(["komodo-cli","-ac_name="+ac_name,"sendrawtransaction", hex]))
+        tx_id = check_output(["komodo-cli","-ac_name="+ac_name,"sendrawtransaction", hex]).decode().rstrip()
     except subprocess.CalledProcessError:
         tx_id = "Error"
     return tx_id
@@ -285,3 +285,20 @@ def int_to_hex(input_filename):
 def io_compare(input_filename, output_filename):
     compare = filecmp.cmp(input_filename, output_filename, shallow=True)
     return compare
+
+def z_sendmany_twoaddresses(sendaddress, recepient1, amount1, recepient2, amount2):
+    json_sendaddress = "\"{}\"".format(sendaddress)
+    sending_block = "[{{\"address\":\"{}\",\"amount\":{}}},{{\"address\":\"{}\",\"amount\":{}}}]".format(recepient1, amount1, recepient2, amount2)
+    print(sending_block)
+    operation_id = (check_output(["komodo-cli","z_sendmany",sendaddress,sending_block])).decode().rstrip()
+    return operation_id
+
+def operationstatus_to_txid(zstatus):
+    sending_block = "[\"{}\"]".format(zstatus)
+    operation_json = json.loads(check_output(["komodo-cli","z_getoperationstatus",sending_block]))[0]
+    txid = dict(operation_json["result"].items())["txid"]
+    return txid
+
+def list_address_groupings():
+    address_list = json.loads(check_output(["komodo-cli","listaddressgroupings"]))
+    print(address_list)
