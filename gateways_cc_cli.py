@@ -3,10 +3,13 @@
 import os
 import readline
 import subprocess
+import signal
+import sys
+from subprocess import check_output
 from test_modules import get_tokens_list, create_token, oracle_create,\
 oracle_register, oracle_subscribe, get_oracles_list, oracle_utxogen,\
 tokens_converter, tx_broadcaster, gateways_bind, z_sendmany_twoaddresses,\
-list_address_groupings, operationstatus_to_txid
+list_address_groupings, operationstatus_to_txid, gateways_deposit, gateways_claim\
 
 header = "\
  _____       _                               _____  _____ \n\
@@ -171,23 +174,38 @@ def gateway_bind_gw():
         input("Press [Enter] to continue...")
 
 def oraclefeed_compile_gw():
-    path_to_komodo = input("Provide me path to your komodo directory. E.g. /home/user/komodo/ : ")
-    # have to add / if last not /
-    subprocess.call(["gcc",path_to_komodo+"src/cc/dapps/oraclefeed.c","-lm","-o",path_to_komodo+"/src/oraclefeed"])
-    subprocess.call(["sudo","ln","-sf",path_to_komodo+"/src/oraclefeed","/usr/local/bin/oraclefeed"])
-    print("oraclefeed is compiled and ready to call as oraclefeed")
+    while True:
+        path_to_komodo = input("Provide me path to your komodo directory. E.g. /home/user/komodo/ : ")
+        try:
+            compile = check_output(["gcc",path_to_komodo+"src/cc/dapps/oraclefeed.c","-lm","-o",path_to_komodo+"/src/oraclefeed"])
+        except subprocess.CalledProcessError as e:
+            print(colorize("You've input wrong path. Please try again!", "pink"))
+        else:
+            #subprocess.call(["sudo","ln","-sf",path_to_komodo+"/src/oraclefeed","/usr/local/bin/oraclefeed"])
+            # oraclefeed working only if executing from same directory with komodod :(
+            print(colorize("oraclefeed dAPP is compiled and ready to execute as oraclefeed", "green"))
+            break
+
     input("Press [Enter] to continue...")
 
 def oraclefeed_run_gw():
-    path_to_komodo = input("Provide me path to your komodo directory. E.g. /home/user/komodo/ : ")
-    subprocess.call([path_to_komodo+"src/oraclefeed"])
+    while True:
+        path_to_komodo = input("Provide me path to your komodo executables directory. E.g. /home/user/komodo/src : ")
+        try:
+            subprocess.check_output("./oraclefeed", cwd=path_to_komodo,shell=True,stderr=subprocess.STDOUT)
+        except FileNotFoundError as e:
+            print(colorize("oraclefeed not found. Please try again!", "pink"))
+        else:
+            print(colorize("oraclefeed found and ready to server", "green"))
+            break
     ac_name = str(input("Input AC name with which you want to work (exmp: ORCL1): "))
     oracle_id = input("Input oracle id (oracle have to be Ihh data type): ")
     #oracleinfo if oracle wrong type -> again input
     pubkey = input("Input yours pubkey: ")
     format = "Ihh"
     bindtxid = input("Input your gateway bind txid: ")
-    subprocess.call([path_to_komodo+"src/oraclefeed",ac_name,oracle_id,pubkey,format,bindtxid])
+    print(colorize("Please use gateways_cc_cli.py tool in other terminal window in next calls since in this oraclefeed is working"), "blue")
+    subprocess.call(["oraclefeed",ac_name,oracle_id,pubkey,format,bindtxid])
     input("Press [Enter] to continue...")
 
 #def oraclefeed_status_monitor(): would be great for future create simple node monitoring tool/method
@@ -202,14 +220,56 @@ def send_kmd_gw():
     recepient1 = input("Input address which belongs to pubkey which will receive tokens: ")
     amount1 = 0.0001
     recepient2 = input("Input gateway deposit address: ")
+    file = open("deposits_list", "a")
     #have to show here deposit addresses for gateways created by user
     amount2 = input("Input how many KMD you want to deposit on this gateway: ")
     operation = z_sendmany_twoaddresses(sendaddress, recepient1, amount1, recepient2, amount2)
+    file.writelines(operationstatus_to_txid(operation) + "\n")
+    file.close()
     print("Operation proceed! " + str(operation))
-    print("KMD Transaction ID: " + str(operationstatus_to_txid(operation)))
-    # maybe have to save it in file
+    print(colorize("KMD Transaction ID: " + str(operationstatus_to_txid(operation)) + " Entry added to deposits_list file", "green"))
     input("Press [Enter] to continue...")
-# Automatically execute gatewaysdeposit and gateways claim after 1 confirmation?
+    # maybe have to save it in file
+
+def gateways_claim_gw():
+    ac_name = str(input("Input AC name with which you want to work (exmp: ORCL1): "))
+    gateway = input("Input gateway bindtxid you want to work with: ")
+    coin = input("Input coin ticker you working with: ")
+    gatewayspending = check_output(["komodo-cli","-ac_name="+ac_name,"gatewayspending",gateway,coin])
+    print("Pending deposits availiable for selected gateway: ")
+    print(gatewayspending)
+    print("Input the details for transaction claiming now")
+    bindtxid = input("Input your gateway bind txid: ")
+    coin = input("Input your external coin ticker (e.g. KMD): ")
+    deposittxid = input("Input yours gatewaysdeposit txid: ")
+    destpub = input("Input pubkey you want to tokens appear to: ")
+    amount = input("Input amount of yours claiming: ")
+    claim_tx_hex = gateways_claim(ac_name, bindtxid, coin, deposittxid, destpub, amount)
+    claim_tx_txid = tx_broadcaster(ac_name,claim_tx_hex["hex"])
+    print("Transaction succesfully claimed: " + claim_tx_id)
+    input("Press [Enter] to continue...")
+
+def gateways_deposit_gw():
+    autodeposit_choice = input("Do you want to proceed to gateway deposit of yours transaction? (y/n): ")
+    if autodeposit_choice == 'y':
+        ac_name = str(input("Input AC name with which you want to work (exmp: ORCL1): "))
+        bindtxid = input("Input your gateway bind txid: ")
+        coin = input("Input your external coin ticker (e.g. KMD): ")
+        # have to hold till it have at least one confirmation
+        cointxid = input("Input your deposit txid: ")
+        destpub = input("Input pubkey which claim deposit: ")
+        amount = input("Input amount of your deposit: ")
+        deposit_raw = gateways_deposit(ac_name, bindtxid, coin, cointxid, destpub, amount)
+        deposit_txid = tx_broadcaster(ac_name,deposit_raw["hex"])
+        print(colorize("Deposit is successful! Deposit request txid: " + deposit_txid \
+         + " After gatewaysclaim node confirmation you will get the tokens", "green"))
+         #have to save it to file
+    elif autodeposit_choice == 'n':
+        pass
+    else:
+        print("Input y or n")
+    input("Press [Enter] to continue...")
+
 
 def tokens_witdrawal_gw():
     print("You called bar()")
@@ -225,21 +285,27 @@ menuItems = [
     { "Tokens converter": tokens_converter_gw },
     { "Bind gateway": gateway_bind_gw },
     { "Compile oraclefeed dAPP": oraclefeed_compile_gw },
-    { "Run oraclefeed dAPP": oraclefeed_run_gw },
+    { "Run oraclefeed dAPP - NOT WORK CORRECT NOW PLEASE RUN DAPP MANUALLY": oraclefeed_run_gw },
     { "Send KMD gateway deposit transaction": send_kmd_gw },
-    { "Withdraw tokens": tokens_witdrawal_gw },
+    { "Execute gateways deposit": gateways_deposit_gw },
+    # { "Claim gateways deposit": gateways_claim },
+    { "Execute gateways claim": gateways_claim_gw },
+    { "Execute gateways withdrawal": tokens_witdrawal_gw },
     { "Exit": exit },
 ]
+
+def signal_handler(signal, frame):
+     os.execv(__file__, sys.argv)
 
 def main():
     while True:
         os.system('clear')
+        signal.signal(signal.SIGINT, signal_handler)
         print(colorize(header, 'pink'))
         print(colorize('CLI version 0.1 by Anton Lysakov\n', 'green'))
         for item in menuItems:
             print(colorize("[" + str(menuItems.index(item)) + "] ", 'blue') + list(item.keys())[0])
         choice = input(">> ")
-        # Have to handle CTRL + C (back to main menu on it if user changed his mind inside of some menuitem)
         try:
             if int(choice) < 0 : raise ValueError
             # Call the matching function

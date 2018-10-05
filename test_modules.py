@@ -197,7 +197,7 @@ def oracle_subscribe(ac_name, oracle_id, publisher_id, datafee):
             lifetime = float(entry["lifetime"])
         if lifetime > 0 :
             print(bcolors.OKGREEN + "Succesfully subscribed on oracle!" + bcolors.ENDC)
-            is_registered = True
+            is_subscribed = True
             break
         elif waiting_time > 359:
             print("Something seems to have gone wrong: 5 minutes timeout passed.")
@@ -274,6 +274,22 @@ def gateways_bind(ac_name,token_id,oracle_id,coinname,tokensupply,pubkey):
     except subprocess.CalledProcessError:
         tx_id = "Error"
     return tx_id
+
+def gateways_deposit(acname, bindtxid, coin, cointxid, destpub, amount):
+    #bindtxid height coin cointxid claimvout deposithex proof destpub amount
+    raw_transaction = json.loads(check_output(["komodo-cli","getrawtransaction",cointxid,"1"]))
+    height = raw_transaction["height"]
+    claimvout = "0" #have to recheck it
+    deposithex = raw_transaction["hex"]
+    proof = (check_output(["komodo-cli","gettxoutproof","[\"{}\"]".format(cointxid)])).decode().rstrip()
+    print(["komodo-cli","-ac_name="+acname,"gatewaysdeposit",bindtxid,str(height),coin,cointxid,claimvout,deposithex,proof, destpub, amount])
+    gateways_deposit_txid = json.loads(check_output(["komodo-cli","-ac_name="+acname,"gatewaysdeposit",bindtxid,str(height),coin,cointxid,claimvout,deposithex,proof, destpub, amount]).decode().rstrip())
+    return gateways_deposit_txid
+
+def gateways_claim(acname, bindtxid, coin, deposittxid, destpub, amount):
+    #gatewaysclaim bindtxid coin deposittxid destpub amount
+    gateways_claim_txid = json.loads(check_output(["komodo-cli","-ac_name="+acname,"gatewaysclaim", bindtxid, coin, deposittxid, destpub, amount]).decode().rstrip())
+    return gateways_claim_txid
 
 def int_to_hex(input_filename):
     with open(input_filename, 'r') as file:
